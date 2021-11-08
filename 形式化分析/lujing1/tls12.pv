@@ -1,0 +1,153 @@
+let Client12() =
+    new cr:random;
+    in(io,offer:params);
+    out(io,CH(cr,offer));
+    in(io,SH(sr,mode));
+    let nego(=TLS12,k,h,a,pt) = mode in
+    let v = TLS12 in
+    let log = (CH(cr,offer),SH(sr,mode)) in
+    in(io,CRT(p));
+    get longTermKeys_tbl(sn,xxx,=p) in
+    let log = (log,CRT(p)) in
+    let RSA(r) = k in
+    new pms: bitstring;
+    let ms = tls12_prf(pms,master_secret,(cr,sr)) in
+    out(io,CKE(rsa_enc(r,p,pms)));
+    let log = (log,CKE(rsa_enc(r,p,pms))) in
+    out(io,CCS(change_cipher_spec));
+    let log = (log,CCS(change_cipher_spec)) in
+    let m1 = tls12_prf(ms,client_finished,(cr,sr)) in
+    out(io,FIN(m1));
+    let log = (log,FIN(m1)) in
+    out(io,CCS(change_cipher_spec));
+    let log = (log,CCS(change_cipher_spec)) in
+    in(io,FIN(m2));
+    if m2 = tls12_prf(ms,server_finished,(cr,sr)) then
+    let ck = b2ae(tls12_prf(ms,client_key_expansion,(sr,cr))) in
+    let sk = b2ae(tls12_prf(ms,server_key_expansion,(sr,cr))) in
+    insert clientSession(cr,sr,NoPSK,p,offer,mode,ck,sk,m1,ms);
+    in (io,(n:bitstring, ad:bitstring));
+    out (io,(symenc(a,ck,n,ad,secretC2S)));
+    0.
+
+
+let Server12() =
+    in(io,CH(cr,offer));
+    in(io,SH(xxx,mode));
+    let nego(=TLS12,k,h,a,pt) = mode in
+    let v = TLS12 in
+    new sr:random;
+    out(io,SH(sr,mode));
+    let log = (CH(cr,offer),SH(sr,mode)) in
+    get longTermKeys_tbl(sn,sk,p) in
+    out(io,CRT(p));
+    let log = (log,CRT(p)) in
+    let RSA(r) = k in
+    in(io,CKE(epms));
+    let success(pms,leak) = rsa_dec(r,sk,epms) in
+    out (io,leak);
+    let ms = tls12_prf(pms,master_secret,(cr,sr)) in
+    let log = (log,CKE(epms)) in
+    in(io,CCS(change_cipher_spec));
+    let log = (log,CCS(change_cipher_spec)) in
+    in(io,FIN(m1));
+    if m1 = tls12_prf(ms,client_finished,(cr,sr)) then
+    let log = (log,FIN(m1)) in
+    in(io,CCS(change_cipher_spec));
+    let log = (log,CCS(change_cipher_spec)) in
+    let m2 = tls12_prf(ms,server_finished,(cr,sr)) in
+    out (io,FIN(m2));
+    let cak = b2ae(tls12_prf(ms,client_key_expansion,(sr,cr))) in
+    let sak = b2ae(tls12_prf(ms,server_key_expansion,(sr,cr))) in
+    out (io,FIN(m2));
+    insert serverSession(cr,sr,NoPSK,p,offer,mode,cak,sak,m1,ms);
+    in (io,(n:bitstring, ad:bitstring));
+    out (io,(symenc(a,sak,n,ad,secretS2C)));
+    phase 1;
+    out(io, sk);
+    0.
+
+
+let secrecySessionKey() = 
+    (get clientSession(cr,sr,psk,p,o,m,ck,sk,cb,ms) in
+     let nego(v,kkk,hhh,aaa,ppp) = m in
+     in (io,=ck);
+     event ClientAEKeyLeaked(v,cr,sr,psk,p)) 
+ |  (get serverSession(cr,sr,psk,p,o,m,ck,sk,cb,ms) in
+     let nego(v,kkk,hhh,aaa,ppp) = m in
+     in (io,=sk);
+     event ServerAEKeyLeaked(v,cr,sr,psk,p))
+ .
+
+
+let longTermKeys() = 
+    event WeakOrCompromisedKey(NoPubKey)
+ |  (in(io,a:prin);
+     new k:privkey; 
+     insert longTermKeys_tbl(a,k,pk(k));
+     out(io,pk(k)))
+.
+let sameSessionAuth() =
+    (get clientSession(cr,sr,psk,p,o,m,ck,sk,cb,ms) in
+     get serverSession(cr',sr',psk',p',o',m',ck',sk',=cb,ms') in
+     let nego(v,kkk,hhh,aaa,ppp) = m in
+     let nego(v',kkk',hhh',aaa',ppp') = m' in
+    if (cr <> cr' || sr <> sr' || p <> p') then
+    event MatchingChannelBinding(v,cr,sr,p,v',cr',sr',p'))
+|   (get clientSession(cr,sr,psk,p,o,m,ck,sk,cb,ms) in
+    get serverSession(cr',sr',psk',p',o',m',=ck,=sk,cb',ms') in
+     let nego(v,kkk,hhh,aaa,ppp) = m in
+     let nego(v',kkk',hhh',aaa',ppp') = m' in
+     if (cr <> cr' || sr <> sr' || p <> p') then
+     event MatchingAEKey(v,cr,sr,p,v',cr',sr',p')).
+let appData() =
+     (get clientSession(cr,sr,psk,ps,o,m,kc,ks,ems,rms) in
+     let nego(v,kkk,hhh,a,pt) = m in
+     in (io,(n:bitstring, ad:bitstring));
+     let mesg = m_c(v,cr,sr,ps,psk) in
+     event ClientSends(v,cr,sr,psk,ps,n,ad,mesg);
+     out (io,symenc(a,kc,n,ad,mesg)))
+  |
+    (get serverSession(cr,sr,psk,ps,o,m,kc,ks,ems,rms) in
+     let nego(v,kkk,hhh,a,pt) = m in
+     in (io,(n:bitstring, ad:bitstring, c:bitstring));
+     let f = symdec(a,kc,n,ad,c) in
+     event ServerReceives(v,cr,sr,psk,ps,n,ad,f))
+  |
+    (get serverSession(cr,sr,psk,ps,o,m,kc,ks,ems,rms) in
+     let nego(v,kkk,hhh,a,pt) = m in
+     in (io,(n:bitstring, ad:bitstring));
+     let mesg = m_s(v,cr,sr,ps,psk) in
+     event ServerSends(v,cr,sr,psk,ps,n,ad,mesg);
+     out (io,symenc(a,ks,n,ad,mesg)))
+  |
+    (get clientSession(cr,sr,psk,ps,o,m,kc,ks,ems,rms) in
+     let nego(v,kkk,hhh,a,pt) = m in
+     in (io,(n:bitstring, ad:bitstring, c:bitstring));
+     let f = symdec(a,ks,n,ad,c) in
+     event ClientReceives(v,cr,sr,psk,ps,n,ad,f))
+.
+  
+
+query attacker(secretC2S);
+      attacker(secretS2C).
+query cr:random, sr:random, p:pubkey, cr':random, sr':random, p':pubkey;
+      event(MatchingAEKey(TLS12,cr,sr,p,TLS12,cr',sr',p')).
+query cr:random, sr:random, psk:preSharedKey, p:pubkey, ms:bitstring, aek:enc_key, cb:bitstring, cr':random, sr':random, v:version;
+      event(ClientAEKeyLeaked(TLS12,cr,sr,psk,p)).
+query cr:random, sr:random, psk:preSharedKey, p:pubkey, ms:bitstring, aek:enc_key, cb:bitstring, cr':random, sr':random, v:version;
+      event(ServerAEKeyLeaked(TLS12,cr,sr,psk,p)).
+query cr:random, sr:random, p:pubkey, cr':random, sr':random, p':pubkey;
+      event(MatchingChannelBinding(TLS12,cr,sr,p,TLS12,cr',sr',p')).
+query cr:random, sr:random, cr':random, sr':random,
+      psk:preSharedKey,p:pubkey, n:bitstring, ad:bitstring, m:bitstring;
+      event(ClientReceives(TLS12,cr,sr,NoPSK,p,n,ad,m)).
+query cr:random, sr:random, psk:preSharedKey, 
+      p:pubkey, ms:bitstring, aek:enc_key, 
+      g:group, ra:rsa_alg, 
+      cb:bitstring, cr':random, sr':random, v:version;
+      attacker(m_c(TLS12,cr,sr,p,psk)).
+
+
+process
+    !Client12() | !Server12() | !secrecySessionKey() | !longTermKeys() | !sameSessionAuth() | !appData() 

@@ -1,0 +1,49 @@
+Nov 05, 2021 8:29:59 PM nl.cypherpunk.statelearner.Learner <init>
+INFO: Using TLS SUL
+Nov 05, 2021 8:30:04 PM nl.cypherpunk.statelearner.Learner learn
+INFO: Using learning algorithm ExtensibleLStarMealy
+Nov 05, 2021 8:30:04 PM nl.cypherpunk.statelearner.Learner learn
+INFO: Using equivalence algorithm MealyModifiedWMethodEQOracle
+Nov 05, 2021 8:30:04 PM nl.cypherpunk.statelearner.Learner learn
+INFO: Starting learning
+Nov 05, 2021 8:30:04 PM de.learnlib.logging.LearnLogger logPhase
+INFO: Starting round 1
+Nov 05, 2021 9:37:22 PM de.learnlib.logging.LearnLogger logCounterexample
+INFO: Counter-example found: Query[ε|ChangeCipherSpec ClientHelloRSA ClientHelloDHE ClientHelloDHE ClientHelloDHE Alert10 / Empty Empty Empty Empty Empty Alert2.80ConnectionClosed]
+Nov 05, 2021 9:37:22 PM de.learnlib.logging.LearnLogger logPhase
+INFO: Starting round 2
+Nov 05, 2021 10:03:32 PM de.learnlib.logging.LearnLogger logCounterexample
+INFO: Counter-example found: Query[ε|ChangeCipherSpec ClientHelloDHE ClientHelloRSA EmptyCertificate Alert10 / Empty Empty Empty Empty Alert2.80ConnectionClosed]
+Nov 05, 2021 10:03:32 PM de.learnlib.logging.LearnLogger logPhase
+INFO: Starting round 3
+Nov 05, 2021 10:51:37 PM de.learnlib.logging.LearnLogger logCounterexample
+INFO: Counter-example found: Query[ε|ChangeCipherSpec Finished EmptyCertificate ClientHelloDHE Alert10 / Empty Empty Empty Empty Alert2.80ConnectionClosed]
+Nov 05, 2021 10:51:37 PM de.learnlib.logging.LearnLogger logPhase
+INFO: Starting round 4
+Nov 05, 2021 11:32:14 PM de.learnlib.logging.LearnLogger logCounterexample
+INFO: Counter-example found: Query[ε|ChangeCipherSpec ClientKeyExchange ClientHelloRSA EmptyCertificate Alert10 / Empty Empty Empty Empty Alert2.80ConnectionClosed]
+Nov 05, 2021 11:32:14 PM de.learnlib.logging.LearnLogger logPhase
+INFO: Starting round 5
+Nov 05, 2021 11:50:15 PM de.learnlib.logging.LearnLogger logCounterexample
+INFO: Counter-example found: Query[ε|ChangeCipherSpec ClientHelloRSA ClientHelloDHE EmptyCertificate Alert10 / Empty Empty Empty Empty Alert2.80ConnectionClosed]
+Nov 05, 2021 11:50:15 PM de.learnlib.logging.LearnLogger logPhase
+INFO: Starting round 6
+Nov 06, 2021 1:24:16 AM nl.cypherpunk.statelearner.Learner learn
+INFO: -------------------------------------------------------
+Nov 06, 2021 1:24:16 AM nl.cypherpunk.statelearner.Learner learn
+INFO: Learning [ms]: 846199, (846.199 s)
+Searching for counter-example [ms]: 16805435, (16805.435 s)
+Total time [ms]: 17651812, (17651.812 s)
+
+Nov 06, 2021 1:24:16 AM nl.cypherpunk.statelearner.Learner learn
+INFO: Rounds []: 6
+Nov 06, 2021 1:24:16 AM nl.cypherpunk.statelearner.Learner learn
+INFO: membership queries to SUL [queries]: 2439
+Nov 06, 2021 1:24:16 AM nl.cypherpunk.statelearner.Learner learn
+INFO: membership queries to cache [queries]: 2439
+Nov 06, 2021 1:24:16 AM nl.cypherpunk.statelearner.Learner learn
+INFO: equivalence queries to SUL [queries]: 32648
+Nov 06, 2021 1:24:16 AM nl.cypherpunk.statelearner.Learner learn
+INFO: equivalence queries to cache [queries]: 32648
+Nov 06, 2021 1:24:16 AM nl.cypherpunk.statelearner.Learner learn
+INFO: States in final hypothesis: 9

@@ -1,0 +1,161 @@
+free io:channel.
+const zero: bitstring.
+free secretC2S, secretS2C:bitstring [private].
+
+
+type enc_alg.
+const AEAD: enc_alg.
+type enc_key.
+fun b2ae(bitstring):enc_key [data].
+fun symenc(enc_alg, enc_key, bitstring, bitstring, bitstring): bitstring.
+fun symdec(enc_alg, enc_key, bitstring, bitstring, bitstring): bitstring
+reduc forall a:enc_alg, k:enc_key, nonce:bitstring, ad:bitstring, plaintext:bitstring;
+    symdec (a, k, nonce, ad, symenc (a, k, nonce, ad, plaintext)) = plaintext.
+
+
+type group.
+const StrongDH:group [data].
+type element.
+fun e2b(element): bitstring [data].
+const G: element [data].
+fun dh_ideal(element,bitstring):element.
+equation forall x:bitstring, y:bitstring;
+    dh_ideal(dh_ideal(G,x),y) =
+    dh_ideal(dh_ideal(G,y),x).
+const BadElement: element [data].
+fun dh_exp(group,element,bitstring):element
+reduc forall g:group, e:element, x:bitstring;
+    dh_exp(StrongDH,e,x) = dh_ideal(e,x).
+letfun dh_keygen(g:group) =
+    new x:bitstring;
+    let gx = dh_exp(g,G,x) in
+    (x,gx).
+
+
+type hash_alg.
+const StrongHash: hash_alg [data].
+fun hash_ideal(bitstring):bitstring.
+fun hash(hash_alg,bitstring): bitstring
+reduc forall x:bitstring;
+    hash(StrongHash,x) = hash_ideal(x).
+
+
+type mac_key.
+fun b2mk(bitstring):mac_key [data,typeConverter].
+fun hmac_ideal(mac_key,bitstring): bitstring.
+fun hmac(hash_alg,mac_key,bitstring):bitstring
+reduc forall k:mac_key, x:bitstring;
+hmac(StrongHash,k, x) = hmac_ideal(k,x).
+
+
+type privkey.
+type pubkey.
+fun pk(privkey): pubkey. 
+const NoPubKey:pubkey.
+fun sign(privkey,bitstring):bitstring.
+fun verify(pubkey,bitstring,bitstring): bool
+reduc forall k:privkey, x:bitstring;
+    verify(pk(k),x,sign(k,x)) = true.
+
+
+type rsa_alg.
+const StrongRSADecryption:rsa_alg.
+fun rsa_enc(rsa_alg,pubkey,bitstring): bitstring.
+type result.
+fun success(bitstring,bitstring):result [data].
+fun failure(bitstring):result [data].
+fun rsa_dec(rsa_alg,privkey,bitstring): result
+reduc forall r:rsa_alg,k:privkey, x:bitstring;
+rsa_dec(StrongRSADecryption,k,rsa_enc(r,pk(k),x)) = success(x,zero).
+
+
+type random.
+type params.
+type version.
+const TLS12, TLS13: version.
+type kex_alg.
+fun RSA(rsa_alg):kex_alg [data].
+fun DHE(group):kex_alg [data].
+fun DHE_13(group,element): kex_alg [data].
+type psk_type.
+fun Binder(bitstring): psk_type [data].
+fun NoBinder(): psk_type [data].
+type msg.
+fun nego(version,kex_alg,hash_alg,enc_alg,psk_type): params [data].
+type label.
+const client_finished, server_finished, master_secret,
+      client_key_expansion, server_key_expansion: label.
+
+const change_cipher_spec,client_key_exchange: label.
+type warning.
+const Alert2_10:warning.
+const connection_closed:label.
+const appdate:bitstring.
+const emptystring:bitstring.
+
+
+
+type prin.
+table longTermKeys_tbl(prin,privkey,pubkey).
+
+type preSharedKey.
+const NoPSK: preSharedKey.
+fun PSK(bitstring): preSharedKey [data].
+fun psk2b(preSharedKey): bitstring
+reduc forall b:bitstring; psk2b(PSK(b)) = b
+otherwise psk2b(NoPSK) = zero.
+
+
+fun tls12_prf(bitstring,label,bitstring): bitstring.
+
+
+
+fun msg2bytes(msg):bitstring [data,typeConverter].
+fun CH(random,params):msg [data].
+fun SH(random,params):msg [data].
+fun CRT(pubkey):msg [data].
+fun SKE(group,element,bitstring):msg [data].
+fun CKE(bitstring): msg [data].
+fun CV(bitstring):msg [data].
+fun FIN(bitstring):msg [data].
+fun CCS(label):msg [data].
+fun ACC(warning,label):msg [data].
+fun CC(label):msg [data].
+fun AD(bitstring):msg [data].
+fun ADEmpty(bitstring):msg [data].
+fun m_s(version,random,random,pubkey,preSharedKey): bitstring [private].
+fun m_c(version,random,random,pubkey,preSharedKey): bitstring [private].
+
+table clientSession(random,random,preSharedKey,pubkey,
+		    params,params,
+		    enc_key,enc_key,bitstring,bitstring).
+table serverSession(random,random,preSharedKey,pubkey,
+		    params,params,
+		    enc_key,enc_key,bitstring,bitstring).
+
+
+
+
+
+event ClientAEKeyLeaked(version,random,random,preSharedKey,pubkey).
+
+event ServerAEKeyLeaked(version,random,random,preSharedKey,pubkey).
+
+event WeakOrCompromisedKey(pubkey).
+
+event ClientSends(version,random,random,preSharedKey,pubkey,bitstring,bitstring,bitstring).
+
+event ServerSends(version,random,random,preSharedKey,pubkey,bitstring,bitstring,bitstring).
+
+event ClientReceives(version,random,random,preSharedKey,pubkey,bitstring,bitstring,bitstring).
+
+event ServerReceives(version,random,random,preSharedKey,pubkey,bitstring,bitstring,bitstring).
+
+event MatchingChannelBinding(version,random,random,pubkey,version,random,random,pubkey).
+
+event MatchingResumptionSecret(version,random,random,pubkey,version,random,random,pubkey).
+
+event MatchingAEKey(version,random,random,pubkey,version,random,random,pubkey).
+
+
+
